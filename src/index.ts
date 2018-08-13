@@ -5,6 +5,14 @@ export type WalkMap<Node> = {
     },
 };
 
+export type IterationHandler<Node> = (
+    node: Node,
+    currentIndex: number,
+    parentsChildren: Node[]|undefined,
+    currentDeep: number,
+    walkMap: WalkMap<Node>,
+) => boolean|void|Promise<boolean|void>;
+
 /** skips root */
 export async function walk<
     ChildrenField extends string = 'children',
@@ -12,7 +20,7 @@ export async function walk<
 >(
     node: Node,
     /** return `false` to stop walking */
-    onNode: (node: Node, currentDeep: number, walkMap: WalkMap<Node>) => boolean|void|Promise<boolean|void>,
+    onNode: IterationHandler<Node>,
     childrenField: ChildrenField = ('children' as any),
 ) {
     const walkMap: WalkMap<Node> = {
@@ -39,7 +47,13 @@ export async function walk<
 
         caret.currentIndex++;
         const currentNode = children[caret.currentIndex];
-        const onNodeResult = onNode(currentNode, currentDeep, walkMap);
+        const onNodeResult = onNode(
+            currentNode,
+            caret.currentIndex,
+            caret.parentsChildren,
+            currentDeep,
+            walkMap,
+        );
         let result;
         if (onNodeResult instanceof Promise) result = await onNodeResult;
         else result = onNodeResult;
